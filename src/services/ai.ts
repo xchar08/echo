@@ -2,7 +2,25 @@ const NEBIUS_API_KEY = import.meta.env.VITE_NEBIUS_API_KEY;
 const NEBIUS_API_URL = "https://api.studio.nebius.ai/v1/chat/completions";
 const MODEL_ID = "meta-llama/Meta-Llama-3.1-8B-Instruct-fast";
 
+let lastRequestTime = 0;
+const MIN_REQUEST_INTERVAL_MS = 2000; // Wait 2 seconds between sequential calls
+
+async function rateLimit() {
+  const now = Date.now();
+  const timeSinceLastRequest = now - lastRequestTime;
+  if (timeSinceLastRequest < MIN_REQUEST_INTERVAL_MS) {
+    await new Promise(resolve => setTimeout(resolve, MIN_REQUEST_INTERVAL_MS - timeSinceLastRequest));
+  }
+  lastRequestTime = Date.now();
+}
+
 export async function nebiusChatCompletion(systemPrompt: string, userPrompt: string) {
+  if (!NEBIUS_API_KEY) {
+    throw new Error("Missing VITE_NEBIUS_API_KEY in .env file. Please add your Nebius API key.");
+  }
+
+  await rateLimit();
+
   const response = await fetch(NEBIUS_API_URL, {
     method: "POST",
     headers: {

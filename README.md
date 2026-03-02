@@ -90,9 +90,10 @@ npm install
 npm run tauri dev
 ```
 
-### Compiling a Production Release
+### Compiling a Local Windows Release
 
-To compile the raw code into a native Windows `.exe` installer:
+To compile the raw code into a native Windows `.exe` installer right on your
+computer:
 
 ```bash
 npm run tauri build
@@ -100,6 +101,32 @@ npm run tauri build
 
 Once completed, your installer will be located in:
 `src-tauri/target/release/bundle/msi/`
+
+### ☁️ Compiling for macOS & Linux (GitHub Actions)
+
+This repository includes a fully-automated cross-platform build pipeline. To
+generate macOS `.dmg`, Linux `.deb`, and Windows `.exe` installers
+simultaneously without needing the physical hardware:
+
+1. Commit all your latest code to your repository:
+   ```bash
+   git add .
+   git commit -m "Your commit message"
+   git push
+   ```
+2. Create an official Git Version Tag:
+   ```bash
+   git tag v1.0.0
+   ```
+3. Push the tag to GitHub to trigger the cloud servers:
+   ```bash
+   git push origin v1.0.0
+   ```
+4. Navigate to the **"Actions"** tab on your GitHub repository. You will see
+   three separate cloud instances (macOS, Ubuntu, and Windows) compiling your
+   code. Once finished, they will automatically attach the compiled,
+   ready-to-use application installers to your **GitHub Releases** page as a new
+   Draft!
 
 ---
 
