@@ -15,8 +15,10 @@ async function rateLimit() {
 }
 
 export async function nebiusChatCompletion(systemPrompt: string, userPrompt: string) {
-  if (!NEBIUS_API_KEY) {
-    throw new Error("Missing VITE_NEBIUS_API_KEY in .env file. Please add your Nebius API key.");
+  const apiKey = localStorage.getItem("NEBIUS_API_KEY") || NEBIUS_API_KEY;
+  
+  if (!apiKey) {
+    throw new Error("Missing Nebius API Key! Click the Settings button in the sidebar to add your key.");
   }
 
   await rateLimit();
@@ -25,7 +27,7 @@ export async function nebiusChatCompletion(systemPrompt: string, userPrompt: str
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${NEBIUS_API_KEY}`,
+      Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
       model: MODEL_ID,

@@ -10,10 +10,13 @@ import {
 } from "./components";
 import { formatDisplayDate } from "./utils/date";
 import "./index.css";
+import { useState } from "react";
 
 function App() {
   const { view, selectedDate, setDatesWithLectures, setCurrentCourse } =
     useStore();
+  const [showSettings, setShowSettings] = useState(false);
+  const [apiKeyInput, setApiKeyInput] = useState(() => localStorage.getItem("NEBIUS_API_KEY") || "");
 
   useEffect(() => {
     loadDatesWithLectures();
@@ -107,6 +110,14 @@ function App() {
             >
               Playback
             </button>
+
+            <button
+              className="btn btn-secondary"
+              style={{ width: "100%", marginBottom: "8px" }}
+              onClick={() => setShowSettings(true)}
+            >
+              Settings
+            </button>
           </div>
 
           <div
@@ -173,6 +184,50 @@ function App() {
           {renderMainContent()}
         </div>
       </main>
+
+      {showSettings && (
+        <div className="modal-overlay" onClick={() => setShowSettings(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <h3>Application Settings</h3>
+            <div className="form-group" style={{ marginTop: '16px' }}>
+              <label>Nebius AI API Key</label>
+              <input 
+                type="password" 
+                value={apiKeyInput}
+                onChange={e => setApiKeyInput(e.target.value)}
+                placeholder="Paste your Nebius API Key here..."
+                style={{
+                  width: "100%",
+                  padding: "8px",
+                  background: "var(--primary)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "6px",
+                  color: "var(--text-primary)",
+                  fontSize: "14px",
+                  marginTop: "8px"
+                }}
+              />
+              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '8px' }}>
+                This key is stored locally on your machine and never sent anywhere except directly to Nebius AI during summarization.
+              </p>
+            </div>
+            <div className="modal-actions" style={{ marginTop: '24px' }}>
+              <button className="btn btn-secondary" onClick={() => setShowSettings(false)}>
+                Cancel
+              </button>
+              <button 
+                className="btn btn-primary" 
+                onClick={() => {
+                  localStorage.setItem("NEBIUS_API_KEY", apiKeyInput.trim());
+                  setShowSettings(false);
+                }}
+              >
+                Save Settings
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
