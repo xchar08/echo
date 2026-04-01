@@ -3,7 +3,7 @@ import { useStore } from '../store';
 import type { Flashcard, QuizQuestion } from '../types';
 
 import { generateRNNSummary, generateFlashcards, generateQuiz } from '../services/ai';
-import { saveLectureMetadata, deleteLectureFiles } from '../services/storage';
+import { saveLectureMetadata, deleteLectureFiles, exportTranscript, exportNotes, exportAudio } from '../services/storage';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Mermaid } from './Mermaid';
@@ -25,6 +25,7 @@ export function StudyHub() {
   const [selectedQuizAnswer, setSelectedQuizAnswer] = useState<number | null>(null);
   const [showQuizResult, setShowQuizResult] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     if (selectedLecture) {
@@ -129,12 +130,41 @@ export function StudyHub() {
     }
   };
 
+  const handleExport = async (type: 'transcript' | 'notes' | 'audio') => {
+    if (!selectedLecture) return;
+    setIsExporting(true);
+    try {
+      if (type === 'transcript') await exportTranscript(selectedLecture);
+      if (type === 'notes') await exportNotes(selectedLecture);
+      if (type === 'audio') await exportAudio(selectedLecture);
+    } catch (e) {
+      console.error(`Export failed:`, e);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'transcript':
         return (
-          <div style={{ whiteSpace: 'pre-wrap', lineHeight: '1.8' }}>
-            {transcript || 'No transcript available. Generate notes to create a transcript.'}
+          <div>
+            <div style={{ whiteSpace: 'pre-wrap', lineHeight: '1.8' }}>
+              {transcript || 'No transcript available. Generate notes to create a transcript.'}
+            </div>
+            {transcript && (
+              <button 
+                className="btn btn-secondary" 
+                style={{ marginTop: '16px' }}
+                onClick={() => handleExport('transcript')}
+                disabled={isExporting}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '8px' }}>
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                </svg>
+                Export Transcript (.txt)
+              </button>
+            )}
           </div>
         );
       
@@ -201,6 +231,18 @@ export function StudyHub() {
                     Edit
                   </button>
                 )
+              )}
+              {aiNotes && !editingNotes && (
+                <button 
+                  className="btn btn-secondary"
+                  onClick={() => handleExport('notes')}
+                  disabled={isExporting}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '8px' }}>
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                  </svg>
+                  Export Notes (.md)
+                </button>
               )}
             </div>
           </div>
@@ -339,6 +381,19 @@ export function StudyHub() {
               <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
             </svg>
             {confirmDelete ? 'Confirm Delete' : ''}
+          </button>
+
+          <button 
+            className="btn btn-secondary"
+            onClick={() => handleExport('audio')}
+            disabled={isExporting}
+            title="Export original audio"
+            style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+            </svg>
+            Export Audio
           </button>
           
           <button className="btn btn-secondary" onClick={() => setView('lecture')}>

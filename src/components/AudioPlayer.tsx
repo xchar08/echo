@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useStore } from '../store';
 import { formatTime } from '../utils/date';
 import { convertFileSrc } from '@tauri-apps/api/core';
-import { deleteLectureFiles } from '../services/storage';
+import { deleteLectureFiles, exportAudio } from '../services/storage';
 
 export function AudioPlayer() {
   const { selectedLecture, setView, removeLecture } = useStore();
@@ -10,6 +10,7 @@ export function AudioPlayer() {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
@@ -67,6 +68,18 @@ export function AudioPlayer() {
     } else {
       setConfirmDelete(true);
       setTimeout(() => setConfirmDelete(false), 3000); // reset after 3s
+    }
+  };
+
+  const handleExport = async () => {
+    if (!selectedLecture) return;
+    setIsExporting(true);
+    try {
+      await exportAudio(selectedLecture);
+    } catch (e) {
+      console.error("Export audio failed:", e);
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -133,6 +146,17 @@ export function AudioPlayer() {
           onClick={() => setView('study-hub')}
         >
           Create Notes
+        </button>
+        <button 
+          className="btn btn-secondary"
+          onClick={handleExport}
+          disabled={isExporting}
+          style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+          </svg>
+          Export Audio
         </button>
         <button className="btn btn-secondary">
           Edit Details

@@ -1,6 +1,7 @@
-import { readTextFile, writeTextFile, remove } from '@tauri-apps/plugin-fs';
+import { readTextFile, writeTextFile, remove, copyFile } from '@tauri-apps/plugin-fs';
 import type { Lecture } from '../types';
 import { invoke } from '@tauri-apps/api/core';
+import { downloadDir, join } from '@tauri-apps/api/path';
 
 export async function saveLectureMetadata(lecture: Lecture): Promise<void> {
   try {
@@ -48,5 +49,55 @@ export async function deleteLectureFiles(audioPath: string, courseName: string):
     
   } catch (error) {
     console.error("Failed to delete lecture files:", error);
+  }
+}
+
+function sanitizeFilename(name: string): string {
+  return name.replace(/[<>:"/\\|?*]/g, '_');
+}
+
+export async function exportTranscript(lecture: Lecture): Promise<string> {
+  try {
+    const downloads = await downloadDir();
+    const safeTitle = sanitizeFilename(lecture.title);
+    const fileName = `${lecture.date}_${safeTitle}_Transcript.txt`;
+    const destination = await join(downloads, fileName);
+    
+    await writeTextFile(destination, lecture.transcript || "");
+    return fileName;
+  } catch (error) {
+    console.error("Failed to export transcript:", error);
+    throw error;
+  }
+}
+
+export async function exportNotes(lecture: Lecture): Promise<string> {
+  try {
+    const downloads = await downloadDir();
+    const safeTitle = sanitizeFilename(lecture.title);
+    const fileName = `${lecture.date}_${safeTitle}_Notes.md`;
+    const destination = await join(downloads, fileName);
+    
+    await writeTextFile(destination, lecture.aiNotes || "");
+    return fileName;
+  } catch (error) {
+    console.error("Failed to export notes:", error);
+    throw error;
+  }
+}
+
+export async function exportAudio(lecture: Lecture): Promise<string> {
+  try {
+    const downloads = await downloadDir();
+    const safeTitle = sanitizeFilename(lecture.title);
+    const extension = lecture.audioPath.split('.').pop() || 'webm';
+    const fileName = `${lecture.date}_${safeTitle}_Audio.${extension}`;
+    const destination = await join(downloads, fileName);
+    
+    await copyFile(lecture.audioPath, destination);
+    return fileName;
+  } catch (error) {
+    console.error("Failed to export audio:", error);
+    throw error;
   }
 }
