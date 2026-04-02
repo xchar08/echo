@@ -35,7 +35,7 @@ function App() {
   const initializeStorage = async () => {
     try {
       const basePath = await invoke<string>("get_base_path");
-      setCurrentCourse(basePath.split("\\").pop() || "Classes");
+      setCurrentCourse(basePath.split(/[/\\]/).pop() || "Classes");
     } catch (e) {
       console.error("Failed to initialize storage:", e);
     }

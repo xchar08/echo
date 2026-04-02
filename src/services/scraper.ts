@@ -3,6 +3,7 @@ import type { Lecture } from '../types';
 import { generateId, formatDate } from '../utils/date';
 import { saveLectureMetadata } from './storage';
 import { useStore } from '../store';
+import { join } from '@tauri-apps/api/path';
 
 /**
  * A proxy web scraper that fetches contents from an Echo360 or Canvas URL
@@ -54,7 +55,7 @@ export async function scrapeLectureUrl(url: string, courseName: string = 'Genera
   const basePath = await invoke<string>('get_base_path');
   
   // For imports, we just create a dummy "audio" path referencing the site
-  const filePath = `${basePath}\\${courseName}\\${filename}.webm`;
+  const filePath = await join(basePath, courseName, `${filename}.webm`);
   
   const lecture: Lecture = {
     id: generateId(),

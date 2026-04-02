@@ -6,8 +6,8 @@ import { downloadDir, join } from '@tauri-apps/api/path';
 export async function saveLectureMetadata(lecture: Lecture): Promise<void> {
   try {
     const basePath = await invoke<string>('get_base_path');
-    const filename = lecture.audioPath.substring(lecture.audioPath.lastIndexOf('\\') + 1).replace('.webm', '');
-    const jsonPath = `${basePath}\\${lecture.courseName}\\${filename}.json`;
+    const filename = lecture.audioPath.split(/[/\\]/).pop()?.replace('.webm', '') || 'lecture';
+    const jsonPath = await join(basePath, lecture.courseName, `${filename}.json`);
     
     const dataToWrite = JSON.stringify(lecture, null, 2);
     await writeTextFile(jsonPath, dataToWrite);
@@ -19,8 +19,8 @@ export async function saveLectureMetadata(lecture: Lecture): Promise<void> {
 export async function loadLectureMetadata(audioPath: string, courseName: string): Promise<Lecture | null> {
   try {
     const basePath = await invoke<string>('get_base_path');
-    const filename = audioPath.substring(audioPath.lastIndexOf('\\') + 1).replace('.webm', '');
-    const jsonPath = `${basePath}\\${courseName}\\${filename}.json`;
+    const filename = audioPath.split(/[/\\]/).pop()?.replace('.webm', '') || 'lecture';
+    const jsonPath = await join(basePath, courseName, `${filename}.json`);
     
     try {
       const content = await readTextFile(jsonPath);
@@ -37,14 +37,16 @@ export async function loadLectureMetadata(audioPath: string, courseName: string)
 export async function deleteLectureFiles(audioPath: string, courseName: string): Promise<void> {
   try {
     const basePath = await invoke<string>('get_base_path');
-    const filename = audioPath.substring(audioPath.lastIndexOf('\\') + 1).replace('.webm', '');
+    const filename = audioPath.split(/[/\\]/).pop()?.replace('.webm', '') || 'lecture';
     
     try {
-      await remove(`${basePath}\\${courseName}\\${filename}.json`);
+      const jsonPath = await join(basePath, courseName, `${filename}.json`);
+      await remove(jsonPath);
     } catch(e) { /* ignore */ }
     
     try {
-      await remove(`${basePath}\\${courseName}\\${filename}.webm`);
+      const audioFilePath = await join(basePath, courseName, `${filename}.webm`);
+      await remove(audioFilePath);
     } catch(e) { /* ignore */ }
     
   } catch (error) {
@@ -53,6 +55,7 @@ export async function deleteLectureFiles(audioPath: string, courseName: string):
 }
 
 function sanitizeFilename(name: string): string {
+  // Cross-platform filename sanitation (removes both \ and / and other invalid chars)
   return name.replace(/[<>:"/\\|?*]/g, '_');
 }
 

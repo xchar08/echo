@@ -4,6 +4,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { formatDate, generateId } from '../utils/date';
 import type { Lecture } from '../types';
 import { saveLectureMetadata } from '../services/storage';
+import { join } from '@tauri-apps/api/path';
 
 interface SpeechRecognitionEvent {
   results: {
@@ -94,9 +95,21 @@ export function RecordButton() {
       source.connect(analyser);
       analyserRef.current = analyser;
       
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus'
-      });
+      const getSupportedMimeType = () => {
+        const types = [
+          'audio/webm;codecs=opus', 
+          'audio/webm', 
+          'audio/mp4',
+          'audio/aac'
+        ];
+        for (const type of types) {
+          if (MediaRecorder.isTypeSupported(type)) return type;
+        }
+        return '';
+      };
+
+      const selectedMimeType = getSupportedMimeType();
+      const mediaRecorder = new MediaRecorder(stream, selectedMimeType ? { mimeType: selectedMimeType } : {});
       
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
@@ -201,7 +214,13 @@ export function RecordButton() {
       
       await invoke('ensure_course_dir', { courseName });
       const basePath = await invoke<string>('get_base_path');
-      const filePath = `${basePath}\\${courseName}\\${filename}.webm`;
+      
+      // Get correct extension from actual recorder
+      const mimeType = mediaRecorderRef.current?.mimeType || 'audio/webm';
+      const extension = mimeType.includes('mp4') ? 'mp4' : 
+                        mimeType.includes('aac') ? 'm4a' : 'webm';
+      
+      const filePath = await join(basePath, courseName, `${filename}.${extension}`);
       
       const arrayBuffer = await audioBlob.arrayBuffer();
       const uint8Array = new Uint8Array(arrayBuffer);
